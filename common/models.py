@@ -3,12 +3,20 @@ from functools import reduce
 import random
 
 import networkx as nx
+from typing import Optional
+from torch import Tensor
+from torch.nn import Linear
+from torch_geometric import EdgeIndex
+from torch_geometric.nn.conv.cugraph import CuGraphSAGEConv
+from torch_geometric.nn.conv.cugraph import CuGraphModule
+from torch_geometric.nn.conv.cugraph.base import LEGACY_MODE
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch_geometric.nn as pyg_nn
 import torch_geometric.utils as pyg_utils
+
 
 from common import utils
 from common import feature_preprocess
@@ -143,7 +151,7 @@ class SkipLastGNN(nn.Module):
                 nn.Linear(i, h), nn.ReLU(), nn.Linear(h, h)
                 ))
         elif model_type == "SAGE":
-            return SAGEConv
+            return CuGraphSAGEConv
         elif model_type == "graph":
             return pyg_nn.GraphConv
         elif model_type == "GAT":
@@ -181,14 +189,14 @@ class SkipLastGNN(nn.Module):
                         self.convs_mean[i](curr_emb, edge_index),
                         self.convs_max[i](curr_emb, edge_index)), dim=-1)
                 else:
-                    x = self.convs[i](curr_emb, edge_index)
+                    x = self.convs[i](curr_emb, CuGraphModule.to_csc(edge_index))
             elif self.skip == 'all':
                 if self.conv_type == "PNA":
                     x = torch.cat((self.convs_sum[i](emb, edge_index),
                         self.convs_mean[i](emb, edge_index),
                         self.convs_max[i](emb, edge_index)), dim=-1)
                 else:
-                    x = self.convs[i](emb, edge_index)
+                    x = self.convs[i](emb, CuGraphModule.to_csc(edge_index))
             else:
                 x = self.convs[i](x, edge_index)
             x = F.relu(x)
@@ -287,4 +295,3 @@ class GINConv(pyg_nn.MessagePassing):
 
     def __repr__(self):
         return '{}(nn={})'.format(self.__class__.__name__, self.nn)
-

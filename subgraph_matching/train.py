@@ -189,7 +189,7 @@ def train_loop(args):
                 msg, params = out_queue.get()
                 train_loss, train_acc = params
                 print("Batch {}. Loss: {:.4f}. Training acc: {:.4f}".format(
-                    batch_n, train_loss, train_acc), end="               \r")
+                    batch_n, train_loss, train_acc))
                 logger.add_scalar("Loss/train", train_loss, batch_n)
                 logger.add_scalar("Accuracy/train", train_acc, batch_n)
                 batch_n += 1
